@@ -1,0 +1,35 @@
+name: C++20 CI (GTest)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    name: Build & Test (${{ matrix.compiler }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [g++-12, clang++-14]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Configure CMake
+      run: |
+        cmake -B build \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
+
+    - name: Build Project
+      run: cmake --build build --config Debug -j$(nproc)
+
+    - name: Run GoogleTests
+      run: |
+        cd build
+        ctest --output-on-failure --verbose
