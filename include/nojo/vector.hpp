@@ -76,7 +76,39 @@ namespace nojo {
             other.capacity_ = 0;
         }
 
-    
+        vector(std::initializer_list<value_type> init, const Allocator& alloc = Allocator()) : alloc_(alloc) {
+            if (init.size() > 0) {
+                data_ = alloc_traits::allocate(alloc_, init.size());
+                capacity_ = init.size();
+
+                size_type counter = 0;
+                try {
+                    for (const auto& obj : init) {
+                        alloc_traits::construct(
+                            alloc_,
+                            data_ + counter,
+                            obj
+                        );
+                        ++counter;
+                    }
+                    size_ = counter;
+                } catch (...) {
+                    for (size_type i = 0; i < counter; ++i) {
+                        alloc_traits::destroy(alloc_, data_ + i);
+                    }
+                    alloc_traits::deallocate(alloc_, data_, capacity_);
+                    data_ = nullptr;
+                    capacity_ = 0;
+                    throw;
+                }
+            }
+        }
+
+        vector& operator=(std::initializer_list<value_type> init) {
+            vector temp(init, alloc_);
+            swap(*this, temp);
+            return *this;
+        }
         ~vector() {
             clear();
             deallocate_buffer();
@@ -154,6 +186,8 @@ namespace nojo {
         const_iterator cbegin() const noexcept { return data_; };
         
         iterator end() noexcept { return data_ + size_; }
+        iterator end() const noexcept { return data_ + size_; }
+        iterator cend() const noexcept { return data_ + size_; }
 
         void push_back(const_reference value) {
             emplace_back(value);
