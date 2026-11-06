@@ -9,7 +9,7 @@ on:
 jobs:
   build-and-test:
     name: Build & Test (${{ matrix.compiler }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  
 
     strategy:
       fail-fast: false
