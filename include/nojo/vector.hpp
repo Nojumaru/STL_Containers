@@ -144,6 +144,19 @@ namespace nojo {
         const_reference operator[](size_type id) const noexcept {
             return data_[id];
         }
+
+        //compare operators
+        bool operator==(const vector& other) {
+            if(size_ != other.size_) return false;
+            for(size_type i = 0; i < size_; ++i) {
+                if (data_[i] != other.data_[i]) return false;
+            }
+            return true;
+        }
+
+        bool operator!=(const vector& other) {
+            return !((*this) == other);
+        }
         //calls
         void reserve(size_type new_capacity) {
             if(new_capacity <= capacity_) return;
@@ -196,6 +209,60 @@ namespace nojo {
         void push_back(value_type&& value) {
             emplace_back(std::move(value));
         }
+        void pop_back() noexcept {
+            if (size_ > 0) {
+                alloc_traits::destroy(alloc_, data_ + size_ - 1);
+                --size_;
+            }
+        }
+
+        iterator insert(const_iterator pos, const_reference value) {
+            return emplace(pos, value);
+        }
+        iterator insert(const_iterator pos, value_type&& value) {
+            return emplace(pos, std::move(value));
+        }
+
+        template <typename... Args>
+        iterator emplace(const_iterator pos, Args&&... args) {
+            difference_type offset = pos - cbegin();
+            if(offset < 0 || static_cast<size_type>(offset) > size_) {
+                throw std::out_of_range("what the fuck out of range");
+            }
+            
+        }
+        void resize(size_type count) {
+            resize(count, value_type());
+        }
+
+        void resize(size_type count, const_reference value) {
+            if (count < size_) {
+                for(size_type i = 0; i < count; ++i) {
+                    alloc_traits::destroy(alloc_, data_ + i);
+                }
+                size_ = count;
+            } else if (count > size_) {
+                if (count > capacity_) {
+                    reserve(count);
+                } 
+                size_type constructed = size_;
+                try {
+                    for(; constructed < count;++constructed) {
+                        alloc_traits::construct(alloc_, data_ + constructed, value);
+                    }
+                    size_type constructed = count;
+                } catch (...) {
+                    for(size_type i = size_; i < constructed; ++i) {
+                        alloc_traits::destory(alloc_, data_ + i);
+                    }
+                    throw;
+                }
+            }
+        }
+
+        void shrink_to_fit() {
+            alloc_traits::deallocate(alloc_, data_ + size_, capacity_ - size_);
+        }
 
         template <typename... Args>
         reference emplace_back(Args&&... args) {
@@ -212,7 +279,6 @@ namespace nojo {
 
             return data_[size_++];
         }
-
         void clear() noexcept {
             for (size_type i = 0; i < size_; ++i) {
                 alloc_traits::destroy(alloc_, data_ + i);
